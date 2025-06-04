@@ -1,0 +1,53 @@
+Algorithm: Automatic Tenement Identification
+Input: 3D Model File (containing spatial units and connection elements)
+Output: List of Tenement Groups + Updated Model + JSON Summary
+
+1. Parse3DModel(modelFile):
+    Extract:
+        - SpatialUnits = all rooms/spaces in the model
+        - Doors, WallOpenings, Windows = elements that can connect two spaces
+    For each space:
+        - Store its geometry polygon
+        - Store associated door, opening, and window elements
+
+2. CreateAllPairs(spatialUnits):
+    Generate all unique pairs of spatial units on the same floor
+
+3. IdentifyConnectedPairs(pairs):
+    For each pair (A, B):
+        - If A and B share polygon edges → mark connected
+        - If A and B share a door ID → mark connected
+        - If A and B share a wall opening → mark connected
+        - If A and B share a window with sill height = 0 → mark connected
+    Return: List of connected space pairs
+
+4. BuildGraph(connectedPairs):
+    Initialize: graph = empty adjacency list
+    For each pair (A, B) in connectedPairs:
+        - Add edge A <-> B to graph
+
+5. FindConnectedComponents(graph):
+    Initialize: visited = empty set
+    For each unvisited node:
+        - Run BFS to collect all connected nodes
+        - Each BFS traversal = one TenementGroup
+
+6. CreateTenements(components):
+    For each component:
+        - Convert list of node IDs to Space objects
+        - Assign unique ID and group name (e.g., Flat 101)
+        - Compute vertical alignment reference (e.g., centroid)
+
+7. HandleUnconnectedSpaces(spatialUnits, groupedIDs):
+    For each space not in any group:
+        - Create individual Tenement with single space
+
+8. IdentifyDuplexes(floors):
+    For each stair element:
+        - Check bounding box overlaps between floors
+        - If spaceA (lower floor) and spaceB (upper floor) are linked by stair:
+            - Merge their TenementGroups
+
+9. Output:
+    - Return updated model with grouped tenements
+    - Generate JSON with all TenementGroup info
